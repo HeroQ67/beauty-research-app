@@ -185,7 +185,24 @@ window.BR_TRENDS = (function () {
 
   function loadCache() {
     lastDiscovered = BR_STORE.get(DISCOVERED_CACHE_KEY, null);
-    if (lastDiscovered) renderDiscoveredResults();
+    if (!lastDiscovered) return;
+    if (lastDiscovered.empty || !lastDiscovered.trends || !lastDiscovered.trends.length) {
+      // Show friendly "no results" status from a previous discovery
+      const status = document.getElementById('discover-status');
+      const results = document.getElementById('discover-results');
+      if (results) results.hidden = true;
+      if (status) {
+        status.hidden = false;
+        const ago = humanAgo(lastDiscovered.ts);
+        status.innerHTML = `<div style="text-align:center; padding: 20px; width: 100%;">
+          <div style="font-size: 2.2rem; margin-bottom: 8px;">🕊</div>
+          <div style="font-weight: 700; font-size: 1rem; color: var(--text);">ไม่พบ Trend ที่เกี่ยวข้องในวันนี้</div>
+          <div style="margin-top: 6px; font-size: .8rem; color: var(--text-muted);">last checked ${ago} · ลองอีกครั้งภายหลัง</div>
+        </div>`;
+      }
+      return;
+    }
+    renderDiscoveredResults();
   }
 
   async function discoverNow() {
@@ -202,9 +219,25 @@ window.BR_TRENDS = (function () {
     try {
       const focus = Array.from(selectedFilters);
       const result = await BR_API.discoverTrends({ focusCategories: focus });
-      const trends = (result.parsed && Array.isArray(result.parsed.trends)) ? result.parsed.trends : [];
+      // Distinguish "API failed entirely" from "API succeeded but returned zero trends"
+      if (!result.parsed || !Array.isArray(result.parsed.trends)) {
+        throw new Error('Claude ตอบกลับมาในรูปแบบที่อ่านไม่ได้ — ลองอีกครั้ง');
+      }
+      const trends = result.parsed.trends;
       if (!trends.length) {
-        throw new Error('Claude ตอบกลับมาแต่ไม่มี trends array — ลองอีกครั้ง หรือเปลี่ยน category filter');
+        // Legitimate empty result — friendly message, not an error
+        results.hidden = true;
+        status.hidden = false;
+        status.innerHTML = `<div style="text-align:center; padding: 20px; width: 100%;">
+          <div style="font-size: 2.2rem; margin-bottom: 8px;">🕊</div>
+          <div style="font-weight: 700; font-size: 1rem; color: var(--text);">ไม่พบ Trend ที่เกี่ยวข้องในวันนี้</div>
+          <div style="margin-top: 6px; font-size: .8rem; color: var(--text-muted);">ลองอีกครั้งภายหลัง หรือเปลี่ยน category filter</div>
+        </div>`;
+        toast('ไม่พบ Trend ใหม่วันนี้', '');
+        // Clear stale cache so the "no results" stays sticky until next discovery
+        lastDiscovered = { ts: result.discoveredAt, trends: [], citations: result.citations, empty: true };
+        BR_STORE.set(DISCOVERED_CACHE_KEY, lastDiscovered);
+        return;
       }
       lastDiscovered = {
         ts: result.discoveredAt,
