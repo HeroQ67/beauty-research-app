@@ -243,11 +243,16 @@ window.BR_TRENDS = (function () {
         ts: result.discoveredAt,
         trends,
         citations: result.citations,
+        salvaged: !!result.parsed._salvaged,
       };
       BR_STORE.set(DISCOVERED_CACHE_KEY, lastDiscovered);
       status.hidden = true;
       renderDiscoveredResults();
-      toast(`พบ ${trends.length} candidates`, 'success');
+      if (result.parsed._salvaged) {
+        toast(`พบ ${trends.length} candidates (partial — response ถูกตัด)`, '');
+      } else {
+        toast(`พบ ${trends.length} candidates`, 'success');
+      }
     } catch (e) {
       console.error('Discover error', e);
       status.innerHTML = `<div style="color: var(--danger); white-space: pre-wrap; font-size: .8rem;"><b>❌ Error:</b>\n${escape(e.message)}</div>`;

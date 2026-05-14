@@ -340,56 +340,38 @@ CRITICAL RULES
 
   function discoverSystemPrompt(focusCategories, currentDate) {
     const focusLine = focusCategories.length
-      ? `Focus specifically on these categories: ${focusCategories.join(', ')}.`
-      : 'Cover all relevant categories.';
+      ? `Focus on these categories: ${focusCategories.join(', ')}.`
+      : 'Cover all categories.';
 
-    return `You are a Thai beauty market intelligence analyst.
+    return `Thai beauty market analyst. Today: ${currentDate}.
 
-Today's date is ${currentDate}.
+Task: Use web_search to find recent trends (last 30-60 days) affecting Thai beauty consumer purchase decisions. ${focusLine}
 
-Your job: Use web_search to find CURRENT, RECENT (last 30-60 days when possible), and RELEVANT trends that affect Thai beauty consumer PURCHASE DECISIONS. ${focusLine}
+Categories: channel, product, ingredient, price, kol, macro, culture, tech, competitor, regulatory, other.
 
-CATEGORIES to cover:
-1. **channel** — TikTok Shop dynamics, Shopee/Lazada beauty performance, live commerce, retail openings/closings
-2. **product** — major brand launches in Thailand, new SKUs going viral, dupes/copycats
-3. **ingredient** — trending actives, new ingredient stories, ingredient backlash (e.g. retinol/tranexamic acid moments)
-4. **price** — price wars, flash sales, premium trade-down patterns
-5. **kol** — KOL/influencer moments, controversies, new beauty creators rising, mega-campaigns
-6. **macro** — Thai economic context, tourism beauty spend, baht swings affecting imports
-7. **culture** — K-beauty/J-beauty waves, makeup looks going viral (clean girl, douyin, etc.), festival/seasonal moments (Songkran/year-end)
-8. **tech** — AI try-on, beauty tech, app launches, virtual consultations
-9. **competitor** — specific competitor brand campaigns: who's launching/promoting/repositioning. INCLUDE brand name in headline.
-10. **regulatory** — FDA Thailand updates, ingredient bans, labeling rules
-11. **other** — anything else affecting purchase behavior
+Find 10-20 distinct trends. Each must have CLEAR impact on PURCHASE BEHAVIOR. Search both Thai + English queries.
 
-REQUIREMENTS:
-- Search with both Thai and English queries — capture local Thai beauty conversation AND global trends entering Thailand.
-- Find 20-30 distinct trends. Diverse across categories.
-- Each must have CLEAR impact on PURCHASE BEHAVIOR (not generic news).
-- Cite source URLs.
-- Use the ACTUAL DATE you find in the article, not today's date.
+OUTPUT — strict JSON only. No prose, no markdown fences. Start with { end with }.
 
-OUTPUT — strict JSON only, no markdown, no preamble:
+Schema:
 {
-  "discovered_at": "${currentDate}",
   "trends": [
     {
-      "headline": "สั้นๆ 1 บรรทัด ไทย — ใส่ชื่อแบรนด์/ตัวเลขถ้ามี",
-      "body": "2-3 ประโยค ไทย — อธิบายว่าทำไม trend นี้ส่งผลต่อ purchase decision (ใคร? ทำไม? จะ shift behavior อย่างไร?)",
+      "headline": "สั้น 1 บรรทัด ไทย (ใส่ชื่อแบรนด์/ตัวเลข)",
+      "body": "1-2 ประโยค ไทย: ทำไมกระทบการซื้อ",
       "category": "channel|product|ingredient|price|kol|macro|culture|tech|competitor|regulatory|other",
-      "date": "YYYY-MM-DD (date of the event/article)",
+      "date": "YYYY-MM-DD",
       "source_url": "https://...",
-      "relevance": "high|medium|low — how strongly this affects buyer decisions"
+      "relevance": "high|medium|low"
     }
-    // ... 20-30 items, sorted by relevance high → low
   ]
 }
 
-CRITICAL:
-- Output ONLY the JSON object. No \`\`\`json fences. No commentary.
-- Headlines must be specific (include brand names, numbers, dates) — not vague.
-- If web_search returns nothing for a category, skip it rather than fabricate.
-- Bodies must explain BUYER BEHAVIOR impact, not just news.`;
+Rules:
+- Keep bodies short (1-2 sentences max) so JSON fits in budget.
+- Sort by relevance high to low.
+- If a field is unknown, use empty string or omit — don't fabricate.
+- If you find no trends at all, return {"trends": []}`;
   }
 
   async function discoverTrends({ focusCategories = [], model = 'claude-sonnet-4-6' } = {}) {
@@ -400,19 +382,75 @@ CRITICAL:
       model,
       system,
       userMessage,
-      useSearch: true,        // discovery REQUIRES web search
+      useSearch: true,
       useThinking: false,
-      maxTokens: 8000,         // need room for 20-30 trends + search reasoning
+      maxTokens: 16000,        // Thai chars are heavy on tokens; +web_search overhead
     });
     const text = extractText(raw);
-    const parsed = parseJsonResponse(text, raw);
+    let parsed;
+    try {
+      parsed = parseJsonResponse(text, raw);
+    } catch (parseErr) {
+      // SALVAGE: if response was truncated (stop_reason=max_tokens), try to extract
+      // however many complete trend objects we got before the cut-off.
+      const salvaged = salvagePartialTrends(extractLastText(raw) || text);
+      if (salvaged && salvaged.length) {
+        console.warn(`Discover truncated; salvaged ${salvaged.length} complete trends.`);
+        parsed = { trends: salvaged, _salvaged: true };
+      } else {
+        throw parseErr;
+      }
+    }
     return {
       parsed,
       citations: extractCitations(raw),
       raw,
       usage: raw.usage,
       discoveredAt: Date.now(),
+      stopReason: raw.stop_reason,
     };
+  }
+
+  // Salvage partial trends from a truncated response. Walks through the text
+  // finding complete {...} objects inside the "trends": [ ... ] array.
+  function salvagePartialTrends(text) {
+    if (!text) return [];
+    // Locate "trends": [
+    const arrIdx = text.search(/"trends"\s*:\s*\[/);
+    if (arrIdx < 0) return [];
+    let i = text.indexOf('[', arrIdx) + 1;
+    const trends = [];
+    while (i < text.length) {
+      // Skip whitespace and commas
+      while (i < text.length && /[\s,]/.test(text[i])) i++;
+      if (i >= text.length) break;
+      if (text[i] === ']') break;
+      if (text[i] !== '{') break;
+      // Find balanced object starting at i
+      const start = i;
+      let depth = 0, inString = false, escape = false;
+      let end = -1;
+      for (let j = start; j < text.length; j++) {
+        const c = text[j];
+        if (escape) { escape = false; continue; }
+        if (c === '\\') { escape = true; continue; }
+        if (c === '"') { inString = !inString; continue; }
+        if (inString) continue;
+        if (c === '{') depth++;
+        else if (c === '}') {
+          depth--;
+          if (depth === 0) { end = j; break; }
+        }
+      }
+      if (end < 0) break; // truncated mid-object — stop salvage here
+      const objText = text.slice(start, end + 1);
+      try {
+        const obj = JSON.parse(objText);
+        if (obj && obj.headline) trends.push(obj);
+      } catch (_) { /* skip malformed object */ }
+      i = end + 1;
+    }
+    return trends;
   }
 
   async function testConnection() {
