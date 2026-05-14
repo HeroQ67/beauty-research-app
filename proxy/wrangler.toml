@@ -1,0 +1,13 @@
+name = "beauty-research-proxy"
+main = "worker.js"
+compatibility_date = "2025-10-01"
+
+# Public env vars — safe to commit.
+[vars]
+# Lock down to your GitHub Pages domain + localhost. Add more comma-separated as needed.
+# "null" allows opening from file:// during local testing.
+ALLOWED_ORIGINS = "https://heroq67.github.io,http://localhost:8080,http://127.0.0.1:8080,null"
+
+# SECRETS — NEVER set here. Use `wrangler secret put`:
+#   npx wrangler secret put ANTHROPIC_API_KEY
+#   npx wrangler secret put APP_TOKEN          (optional — extra abuse protection)

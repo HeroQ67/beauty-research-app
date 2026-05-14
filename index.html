@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Beauty Research Lab — แอปวิจัยตลาดความสวยความงาม</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- ============================== HEADER ============================== -->
+<header class="app-header no-print">
+  <div class="brand">
+    <span class="brand-mark">💎</span>
+    <div>
+      <h1>BEAUTY <span class="coupon-highlight">RESEARCH</span> LAB</h1>
+      <p class="brand-sub">วิจัยตลาดความสวยความงาม · MARKET RESEARCH</p>
+    </div>
+  </div>
+
+  <nav class="tabs" role="tablist">
+    <button class="tab active" data-tab="personas" role="tab">
+      <span class="tab-ico">👥</span>
+      <span class="tab-label">Personas <small>กลุ่มเป้าหมาย</small></span>
+    </button>
+    <button class="tab" data-tab="trends" role="tab">
+      <span class="tab-ico">📈</span>
+      <span class="tab-label">Trends <small>เทรนด์ปัจจุบัน</small></span>
+    </button>
+    <button class="tab" data-tab="research" role="tab">
+      <span class="tab-ico">🔬</span>
+      <span class="tab-label">Research <small>ถาม / สำรวจ</small></span>
+    </button>
+  </nav>
+
+  <div class="header-right">
+    <span id="proxy-badge" class="proxy-badge" hidden>🔒 Shared</span>
+    <button id="btn-api-settings" class="ghost-btn" title="API Settings">⚙️ API</button>
+  </div>
+</header>
+
+<!-- ============================== PERSONAS TAB ============================== -->
+<section id="tab-personas" class="tab-panel active" role="tabpanel">
+  <div class="panel-layout">
+    <aside class="sidebar">
+      <div class="sidebar-head">
+        <h2>Personas <small>ทั้งหมด</small></h2>
+      </div>
+      <div class="sidebar-actions">
+        <button id="btn-new-persona" class="primary-btn">+ New</button>
+        <button id="btn-random-persona" class="ghost-btn" title="สุ่ม persona จากสถิติผู้ซื้อ beauty ไทย">🎲 Random</button>
+      </div>
+      <div id="persona-list" class="persona-list"></div>
+
+      <details class="sidebar-tools">
+        <summary>เครื่องมือ / Tools</summary>
+        <button id="btn-import-personas" class="ghost-btn">📥 Import JSON</button>
+        <button id="btn-export-personas" class="ghost-btn">📤 Export JSON</button>
+        <button id="btn-seed-personas" class="ghost-btn">🌱 โหลด Seed (4 ตัวอย่าง)</button>
+        <input type="file" id="file-import-personas" accept="application/json" hidden>
+      </details>
+    </aside>
+
+    <main class="editor">
+      <div id="persona-empty" class="empty-state">
+        <div class="empty-ico">👥</div>
+        <h2>ยังไม่มี Persona ที่เลือก</h2>
+        <p>กดปุ่ม <strong>+ ใหม่ / New</strong> เพื่อสร้าง persona<br>หรือเลือกจากรายการด้านซ้าย</p>
+      </div>
+
+      <form id="persona-form" class="persona-form" hidden>
+        <header class="form-header">
+          <h2 id="persona-form-title">แก้ไข Persona</h2>
+          <div class="form-actions">
+            <button type="button" id="btn-delete-persona" class="danger-btn">🗑 ลบ</button>
+            <button type="button" id="btn-duplicate-persona" class="ghost-btn">⎘ Duplicate</button>
+            <button type="submit" id="btn-save-persona" class="primary-btn">💾 บันทึก / Save</button>
+          </div>
+        </header>
+        <div id="persona-form-body"></div>
+      </form>
+    </main>
+  </div>
+</section>
+
+<!-- ============================== TRENDS TAB ============================== -->
+<section id="tab-trends" class="tab-panel" role="tabpanel">
+  <div class="trends-layout">
+    <div class="trends-main">
+
+      <!-- ===== DISCOVER PANEL ===== -->
+      <section class="discover-panel">
+        <header class="discover-head">
+          <div>
+            <h2>🔍 Discover Trends <small>· ค้นหาเทรนด์จาก web วันนี้</small></h2>
+            <p class="muted small">Claude จะค้น web หา trends สดในตลาด beauty ไทย (แคมเปญแบรนด์/makeup viral/KOL moments/ingredient shifts) — เลือกที่ใช่ กดเพิ่มเข้า Active Trends</p>
+          </div>
+          <div class="discover-actions">
+            <button id="btn-discover-trends" class="primary-btn">🔍 ค้นหา Trends</button>
+          </div>
+        </header>
+
+        <details class="discover-filters">
+          <summary>⚙️ Filter categories (เลือกเฉพาะที่สนใจ — เว้นว่าง = ทุก category)</summary>
+          <div class="filter-grid" id="discover-filter-grid">
+            <!-- populated by trends.js -->
+          </div>
+        </details>
+
+        <div id="discover-status" class="discover-status muted small" hidden></div>
+
+        <div id="discover-results" class="discover-results" hidden>
+          <div class="discover-results-head">
+            <div>
+              <b id="discover-results-count">0</b> candidates found
+              <span class="muted small" id="discover-results-time"></span>
+            </div>
+            <div>
+              <button class="chip" id="btn-discover-select-all">✓ Select All</button>
+              <button class="chip" id="btn-discover-clear">✗ Clear</button>
+            </div>
+          </div>
+          <div id="discover-candidates" class="discover-candidates"></div>
+          <div class="discover-footer">
+            <button id="btn-discover-add" class="primary-btn">➕ Add Selected (<span id="discover-selected-count">0</span>) to Active</button>
+          </div>
+        </div>
+      </section>
+
+      <hr style="margin: 24px 0; border: none; border-top: 1px solid var(--border);">
+
+      <!-- ===== ACTIVE TRENDS LIST ===== -->
+      <header class="section-header">
+        <div>
+          <h2>📋 Active Trends <small>· เทรนด์ที่ใช้งานอยู่</small></h2>
+          <p class="muted small">เทรนด์เหล่านี้จะถูก inject เข้าไปทุกครั้งที่ Claude ตอบคำถาม — เพื่อให้ persona ตอบโดยอ้างอิงสถานการณ์ปัจจุบัน</p>
+        </div>
+        <button id="btn-new-trend" class="ghost-btn">+ เพิ่มเอง / Manual</button>
+      </header>
+
+      <div id="trend-list" class="trend-list"></div>
+    </div>
+
+    <aside class="trends-side">
+      <div class="card">
+        <h3>📋 Active context</h3>
+        <p class="muted small">ข้อความที่จะถูกส่งให้ Claude ใน system prompt</p>
+        <pre id="trends-preview" class="preview-box"></pre>
+      </div>
+      <div class="card">
+        <h3>💡 Tip</h3>
+        <ul class="tip-list">
+          <li>ใส่ trend ที่กระทบ <b>พฤติกรรมการซื้อ</b> เท่านั้น (เช่น "TikTok shop กระโดด 200% YoY")</li>
+          <li>ใส่ <b>วันที่</b> เพื่อรู้ว่า trend ไหนยังสด</li>
+          <li>ลบ trend เก่าออกเป็นระยะ เพื่อไม่ให้ context ยาวเกิน</li>
+        </ul>
+      </div>
+    </aside>
+  </div>
+</section>
+
+<!-- ============================== RESEARCH TAB ============================== -->
+<section id="tab-research" class="tab-panel" role="tabpanel">
+  <div class="research-modes no-print">
+    <button class="mode-btn active" data-mode="single">
+      <span class="mode-ico">💬</span>
+      <div>
+        <h3>Single-Persona Q&A</h3>
+        <small>ถามทีละ persona — ได้คำตอบลึก สไตล์สัมภาษณ์</small>
+      </div>
+    </button>
+    <button class="mode-btn" data-mode="survey">
+      <span class="mode-ico">📊</span>
+      <div>
+        <h3>Multi-Persona Survey</h3>
+        <small>ส่งคำถามเดียวกันให้หลาย persona — ได้ distribution + insights</small>
+      </div>
+    </button>
+  </div>
+
+  <!-- ===== SINGLE Q&A MODE ===== -->
+  <div id="research-single" class="research-mode active">
+    <div class="research-grid">
+      <aside class="research-config no-print">
+        <div class="card">
+          <h3>1. เลือก Persona</h3>
+          <select id="single-persona-select" class="full-width">
+            <option value="">— เลือก persona —</option>
+          </select>
+        </div>
+
+        <div class="card">
+          <h3>2. ตั้งค่า / Settings</h3>
+          <label class="form-row">
+            <span>Model</span>
+            <select id="single-model">
+              <option value="claude-opus-4-7">Opus 4.7 (ลึกสุด)</option>
+              <option value="claude-sonnet-4-6" selected>Sonnet 4.6 (สมดุล)</option>
+              <option value="claude-haiku-4-5-20251001">Haiku 4.5 (เร็ว)</option>
+            </select>
+          </label>
+          <label class="form-row checkbox">
+            <input type="checkbox" id="single-use-search" checked>
+            <span>🌐 ใช้ Web Search<br><small class="muted">เชื่อมข้อมูลจริงจาก web เข้ากับ persona</small></span>
+          </label>
+          <label class="form-row checkbox">
+            <input type="checkbox" id="single-use-thinking">
+            <span>🧠 Extended Thinking<br><small class="muted">คิดลึก ก่อนตอบ (ช้ากว่า)</small></span>
+          </label>
+        </div>
+
+        <div class="card">
+          <h3>3. คำถาม / Question</h3>
+          <textarea id="single-question" rows="6" placeholder="เช่น&#10;&#10;ถ้ามีเซรั่มวิตซีตัวใหม่ราคา 890 บาท ขายผ่าน TikTok live เท่านั้น คุณจะซื้อมั้ย? เพราะอะไร?&#10;&#10;หรือ&#10;&#10;ถ้าเห็น KOL ที่ตามอยู่รีวิวสบู่ก้อนละ 350 บาท คุณจะมีปฏิกิริยายังไง?"></textarea>
+          <div class="quick-prompts">
+            <button class="chip" data-prompt="หากมีสินค้าใหม่ในกลุ่ม [ระบุ category] ราคา [X] บาท คุณคิดว่าจะซื้อหรือไม่ เพราะอะไร?">💡 Concept test</button>
+            <button class="chip" data-prompt="ระหว่างซื้อจาก TikTok Shop กับ Counter ห้าง คุณเลือกอะไร เพราะอะไร?">🛒 Channel pref</button>
+            <button class="chip" data-prompt="ถ้าราคาขึ้น 20% คุณจะยังซื้อแบรนด์โปรดอยู่มั้ย หรือเปลี่ยนไปทดลองแบรนด์ใหม่?">💰 Price sensitivity</button>
+            <button class="chip" data-prompt="ในหนึ่งปีที่ผ่านมา มีอะไรที่ทำให้คุณตัดสินใจเปลี่ยนแบรนด์/หยุดใช้แบรนด์เดิม?">🔄 Switching</button>
+          </div>
+          <button id="btn-ask-single" class="primary-btn full-width">🔬 ถาม / Ask</button>
+        </div>
+      </aside>
+
+      <main class="research-output">
+        <div id="single-output" class="output-area">
+          <div class="empty-state small">
+            <div class="empty-ico">💬</div>
+            <p>เลือก persona และพิมพ์คำถามทางซ้าย<br>คำตอบจะแสดงที่นี่</p>
+          </div>
+        </div>
+        <div class="output-actions no-print" id="single-output-actions" hidden>
+          <button id="btn-print-single" class="primary-btn">🖨 Export PDF</button>
+          <button id="btn-save-single" class="ghost-btn">💾 Save to History</button>
+          <button id="btn-clear-single" class="ghost-btn">✕ Clear</button>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- ===== MULTI SURVEY MODE ===== -->
+  <div id="research-survey" class="research-mode">
+    <div class="research-grid">
+      <aside class="research-config no-print">
+        <div class="card">
+          <h3>1. เลือก Personas (หลายคน)</h3>
+          <div class="selector-actions">
+            <button id="btn-select-all-personas" class="chip">เลือกทั้งหมด</button>
+            <button id="btn-clear-personas" class="chip">ล้าง</button>
+          </div>
+          <div id="survey-persona-list" class="persona-checklist"></div>
+        </div>
+
+        <div class="card">
+          <h3>2. Settings</h3>
+          <label class="form-row">
+            <span>Model</span>
+            <select id="survey-model">
+              <option value="claude-opus-4-7" selected>Opus 4.7 (แนะนำสำหรับ panel)</option>
+              <option value="claude-sonnet-4-6">Sonnet 4.6</option>
+            </select>
+          </label>
+          <label class="form-row checkbox">
+            <input type="checkbox" id="survey-use-search" checked>
+            <span>🌐 Web Search</span>
+          </label>
+          <label class="form-row checkbox">
+            <input type="checkbox" id="survey-use-thinking" checked>
+            <span>🧠 Extended Thinking</span>
+          </label>
+        </div>
+
+        <div class="card">
+          <h3>3. คำถาม Survey</h3>
+          <textarea id="survey-question" rows="6" placeholder="เช่น&#10;&#10;ถ้าเปิดตัว Vitamin C Serum ขนาด 30ml ราคา 1,290 บาท ขายเฉพาะ TikTok Live สัปดาห์แรก คุณจะ:&#10;a) ซื้อทันที&#10;b) รอรีวิว&#10;c) รอให้ลด&#10;d) ไม่ซื้อแน่นอน&#10;&#10;เพราะอะไร?"></textarea>
+          <button id="btn-run-survey" class="primary-btn full-width">📊 รัน Survey / Run</button>
+        </div>
+      </aside>
+
+      <main class="research-output">
+        <div id="survey-output" class="output-area">
+          <div class="empty-state small">
+            <div class="empty-ico">📊</div>
+            <p>เลือก personas อย่างน้อย 2 คน<br>แล้วกด รัน Survey</p>
+          </div>
+        </div>
+        <div class="output-actions no-print" id="survey-output-actions" hidden>
+          <button id="btn-print-survey" class="primary-btn">🖨 Export PDF</button>
+          <button id="btn-save-survey" class="ghost-btn">💾 Save to History</button>
+          <button id="btn-clear-survey" class="ghost-btn">✕ Clear</button>
+        </div>
+      </main>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== API SETTINGS MODAL ============================== -->
+<div id="modal-api" class="modal" hidden>
+  <div class="modal-backdrop"></div>
+  <div class="modal-body">
+    <header class="modal-head">
+      <h2>⚙️ API Settings</h2>
+      <button class="modal-close" data-close-modal>✕</button>
+    </header>
+    <div class="modal-content">
+      <div id="proxy-info" class="proxy-info" hidden>
+        <h3>🔒 Shared Proxy Mode</h3>
+        <p>App นี้ใช้ <b>Cloudflare Worker proxy</b> ของเจ้าของ — คุณ <b>ไม่ต้อง</b> ใส่ API key เอง<br>
+        ทุก request จะใช้ key ของเจ้าของผ่าน proxy ที่ปลอดภัย</p>
+        <p class="muted small">Proxy URL: <code id="proxy-url-display"></code></p>
+      </div>
+
+      <div id="byo-key-info">
+        <label class="form-row">
+          <span>Anthropic API Key</span>
+          <input type="password" id="input-api-key" placeholder="sk-ant-...">
+        </label>
+        <p class="muted small">
+          คีย์เก็บใน <code>localStorage</code> ของเบราว์เซอร์เท่านั้น<br>
+          หาคีย์ได้ที่ <a href="https://console.anthropic.com/" target="_blank" rel="noopener">console.anthropic.com</a>
+        </p>
+      </div>
+
+      <hr>
+
+      <h3>Beta Headers</h3>
+      <p class="muted small">เปิดถ้าใช้ <b>1M context</b> หรือ <b>web search</b></p>
+      <label class="form-row checkbox">
+        <input type="checkbox" id="beta-context-1m" checked>
+        <span>context-1m-2025-08-07 (1M context window)</span>
+      </label>
+      <label class="form-row checkbox">
+        <input type="checkbox" id="beta-prompt-caching" checked>
+        <span>prompt-caching (ลดต้นทุนเมื่อ persona ซ้ำ)</span>
+      </label>
+
+      <hr>
+
+      <button id="btn-test-api" class="ghost-btn">🧪 Test connection</button>
+      <span id="api-test-result" class="muted small"></span>
+    </div>
+    <footer class="modal-foot">
+      <button class="ghost-btn" data-close-modal>ยกเลิก</button>
+      <button id="btn-save-api" class="primary-btn">บันทึก / Save</button>
+    </footer>
+  </div>
+</div>
+
+<!-- ============================== TOAST ============================== -->
+<div id="toast" class="toast" hidden></div>
+
+<!-- ============================== SCRIPTS ============================== -->
+<script src="config.js"></script>
+<script src="matrix.js"></script>
+<script src="store.js"></script>
+<script src="generator.js"></script>
+<script src="api.js"></script>
+<script src="personas.js"></script>
+<script src="trends.js"></script>
+<script src="research.js"></script>
+<script src="report.js"></script>
+<script src="app.js"></script>
+
+</body>
+</html>
