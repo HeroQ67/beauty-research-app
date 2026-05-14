@@ -168,11 +168,22 @@ input[type="range"]::-webkit-slider-thumb {
   padding: 20px 32px; background: var(--bg-deep);
   border-bottom: 3px solid var(--primary);
   position: sticky; top: 0; z-index: 10;
-  color: var(--text-on-dark);
+  color: #fff;
 }
+/* Defensive: ensure NOTHING in header inherits dark text from body */
+.app-header h1,
+.app-header h2,
+.app-header h3,
+.app-header p,
+.app-header span,
+.app-header small,
+.app-header button {
+  color: inherit;
+}
+
 .brand { display: flex; align-items: center; gap: 14px; }
 .brand-wordmark h1 {
-  margin: 0; color: var(--text-on-dark);
+  margin: 0; color: #fff;
   font-family: var(--font-display); font-weight: 400;
   font-size: 1.6rem; letter-spacing: 0.08em;
   line-height: 1; text-transform: uppercase;
@@ -182,7 +193,7 @@ input[type="range"]::-webkit-slider-thumb {
   line-height: 0.6; vertical-align: middle; margin: 0 -0.05em;
 }
 .brand-sub {
-  margin: 4px 0 0; font-size: .68rem; color: #888;
+  margin: 6px 0 0; font-size: .72rem; color: #b8b8b8;
   text-transform: uppercase; letter-spacing: 0.18em;
   font-weight: 500;
 }
@@ -192,18 +203,18 @@ input[type="range"]::-webkit-slider-thumb {
   display: flex; align-items: center; gap: 10px;
   padding: 12px 22px; background: transparent;
   border-radius: 0; font-family: inherit;
-  color: #888; font-weight: 600;
+  color: #d0d0d0; font-weight: 600;
   transition: all .15s;
   border: none; border-bottom: 3px solid transparent;
   margin-bottom: -3px;
 }
-.tab:hover { color: white; }
+.tab:hover { color: #fff; }
 .tab.active {
-  color: white; border-bottom-color: var(--primary);
+  color: #fff; border-bottom-color: var(--primary);
 }
 .tab-num {
   font-family: var(--font-display); font-size: 1.1rem;
-  color: var(--primary); font-weight: 400; letter-spacing: 0.05em;
+  color: var(--primary) !important; font-weight: 400; letter-spacing: 0.05em;
 }
 .tab-label {
   display: flex; flex-direction: column; align-items: flex-start;
@@ -212,7 +223,7 @@ input[type="range"]::-webkit-slider-thumb {
   letter-spacing: 0.08em; font-weight: 400;
 }
 .tab-label small {
-  color: inherit; opacity: .55; font-size: .6rem;
+  color: inherit; opacity: .75; font-size: .68rem;
   text-transform: none; letter-spacing: 0.05em;
   font-weight: 500; font-family: 'Inter', sans-serif;
   margin-top: 2px;
@@ -220,10 +231,13 @@ input[type="range"]::-webkit-slider-thumb {
 
 .header-right { display: flex; align-items: center; gap: 10px; }
 .header-right .ghost-btn {
-  color: white; border-color: #333;
+  color: #fff !important; border-color: #555;
 }
 .header-right .ghost-btn:hover {
-  background: var(--primary); border-color: var(--primary); color: white;
+  background: var(--primary); border-color: var(--primary); color: #fff !important;
+}
+.app-header .proxy-badge {
+  color: #fff !important; background: var(--primary);
 }
 .proxy-badge {
   background: var(--primary); color: white;

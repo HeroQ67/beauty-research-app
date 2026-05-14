@@ -202,18 +202,22 @@ window.BR_TRENDS = (function () {
     try {
       const focus = Array.from(selectedFilters);
       const result = await BR_API.discoverTrends({ focusCategories: focus });
+      const trends = (result.parsed && Array.isArray(result.parsed.trends)) ? result.parsed.trends : [];
+      if (!trends.length) {
+        throw new Error('Claude ตอบกลับมาแต่ไม่มี trends array — ลองอีกครั้ง หรือเปลี่ยน category filter');
+      }
       lastDiscovered = {
         ts: result.discoveredAt,
-        trends: result.parsed.trends || [],
+        trends,
         citations: result.citations,
       };
       BR_STORE.set(DISCOVERED_CACHE_KEY, lastDiscovered);
       status.hidden = true;
       renderDiscoveredResults();
-      toast(`พบ ${lastDiscovered.trends.length} candidates`, 'success');
+      toast(`พบ ${trends.length} candidates`, 'success');
     } catch (e) {
-      console.error(e);
-      status.innerHTML = `<span style="color: var(--danger);">❌ Error: ${escape(e.message)}</span>`;
+      console.error('Discover error', e);
+      status.innerHTML = `<div style="color: var(--danger); white-space: pre-wrap; font-size: .8rem;"><b>❌ Error:</b>\n${escape(e.message)}</div>`;
     } finally {
       btn.disabled = false;
       btn.textContent = '🔍 ค้นหา Trends';
