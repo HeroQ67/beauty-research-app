@@ -1,6 +1,6 @@
-# Beauty Research Lab
+# LA GLACE Persona Lab
 
-แอปวิจัยตลาดความสวยความงาม — Beauty Market Research App
+Editorial-style beauty market research app — บิวตี้ market research สไตล์นิตยสาร
 
 Single-file HTML/JS app for building beauty consumer personas, tracking market trends, and running AI-powered research (single-persona Q&A or multi-persona panel surveys) via the Claude API.
 
