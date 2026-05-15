@@ -222,6 +222,10 @@
           </div>
           <button id="btn-ask-single" class="primary-btn full-width">🔬 ถาม / Ask</button>
         </div>
+
+        <div class="card">
+          <button id="btn-history-single" class="ghost-btn full-width">📜 ดู History <span class="hist-count" id="hist-count-single">0</span></button>
+        </div>
       </aside>
 
       <main class="research-output">
@@ -276,6 +280,10 @@
           <h3>3. คำถาม Survey</h3>
           <textarea id="survey-question" rows="6" placeholder="เช่น&#10;&#10;ถ้าเปิดตัว Vitamin C Serum ขนาด 30ml ราคา 1,290 บาท ขายเฉพาะ TikTok Live สัปดาห์แรก คุณจะ:&#10;a) ซื้อทันที&#10;b) รอรีวิว&#10;c) รอให้ลด&#10;d) ไม่ซื้อแน่นอน&#10;&#10;เพราะอะไร?"></textarea>
           <button id="btn-run-survey" class="primary-btn full-width">📊 รัน Survey / Run</button>
+        </div>
+
+        <div class="card">
+          <button id="btn-history-survey" class="ghost-btn full-width">📜 ดู History <span class="hist-count" id="hist-count-survey">0</span></button>
         </div>
       </aside>
 
@@ -345,6 +353,24 @@
       <button class="ghost-btn" data-close-modal>ยกเลิก</button>
       <button id="btn-save-api" class="primary-btn">บันทึก / Save</button>
     </footer>
+  </div>
+</div>
+
+<!-- ============================== HISTORY MODAL ============================== -->
+<div id="modal-history" class="modal" hidden>
+  <div class="modal-backdrop"></div>
+  <div class="modal-body modal-wide">
+    <header class="modal-head">
+      <h2 id="history-modal-title">📜 History</h2>
+      <button class="modal-close" data-close-history>✕</button>
+    </header>
+    <div class="modal-content">
+      <div class="history-actions">
+        <span class="muted small" id="history-meta">0 entries</span>
+        <button id="btn-clear-history" class="danger-btn">🗑 Clear All</button>
+      </div>
+      <div id="history-list" class="history-list"></div>
+    </div>
   </div>
 </div>
 

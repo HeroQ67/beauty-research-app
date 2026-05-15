@@ -385,10 +385,169 @@ window.BR_RESEARCH = (function () {
     `;
   }
 
+  // ============ History viewer ============
+  let historyKind = 'single';   // currently-open kind in the modal
+
+  function refreshHistoryCounts() {
+    const s = BR_STORE.getHistory('single').length;
+    const v = BR_STORE.getHistory('survey').length;
+    const elS = document.getElementById('hist-count-single');
+    const elV = document.getElementById('hist-count-survey');
+    if (elS) elS.textContent = s;
+    if (elV) elV.textContent = v;
+  }
+
+  function openHistory(kind) {
+    historyKind = kind;
+    const modal = document.getElementById('modal-history');
+    document.getElementById('history-modal-title').textContent =
+      kind === 'single' ? '📜 History · Single Q&A' : '📜 History · Multi-Persona Survey';
+    renderHistoryList();
+    modal.hidden = false;
+  }
+
+  function closeHistory() {
+    document.getElementById('modal-history').hidden = true;
+  }
+
+  function renderHistoryList() {
+    const list = BR_STORE.getHistory(historyKind);
+    const root = document.getElementById('history-list');
+    const meta = document.getElementById('history-meta');
+    meta.textContent = list.length ? `${list.length} entries · saved newest first` : 'No saved entries yet';
+    if (!list.length) {
+      root.innerHTML = `<div class="empty-state small">
+        <div class="empty-ico">📭</div>
+        <p>ยังไม่มีรายการที่บันทึก<br><small>กด "💾 Save to History" หลังจาก research เพื่อเก็บไว้ดูภายหลัง</small></p>
+      </div>`;
+      return;
+    }
+    root.innerHTML = list.map(e => renderHistoryItem(e)).join('');
+    // Wire actions
+    root.querySelectorAll('[data-load]').forEach(btn => {
+      btn.addEventListener('click', () => loadHistoryEntry(Number(btn.dataset.load)));
+    });
+    root.querySelectorAll('[data-del]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const ts = Number(btn.dataset.del);
+        if (!confirm('ลบรายการนี้?')) return;
+        BR_STORE.deleteHistoryEntry(historyKind, ts);
+        renderHistoryList();
+        refreshHistoryCounts();
+      });
+    });
+  }
+
+  function renderHistoryItem(e) {
+    const dt = new Date(e.ts);
+    const dateStr = dt.toLocaleString('th-TH', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    const ago = humanAgo(e.ts);
+    const question = escape((e.question || '').slice(0, 140));
+    const fullQ = (e.question || '').length > 140 ? '…' : '';
+
+    let subject, statsLine;
+    if (historyKind === 'single') {
+      subject = e.persona ? `${escape(e.persona.name)}${e.persona.age ? ' · ' + e.persona.age + 'y' : ''}` : '—';
+      const p = e.parsed || {};
+      const purchaseStat = (p.statistics || []).find(s => /purchase|ซื้อ/i.test(s.label || ''));
+      statsLine = purchaseStat ? `Purchase prob: <b>${purchaseStat.value}${purchaseStat.unit || ''}</b>` : '';
+    } else {
+      const n = (e.personas || []).length;
+      subject = `Panel n=${n}` + ((e.personas || []).slice(0, 3).map(p => p.name).join(', ') ? ` · ${(e.personas || []).slice(0, 3).map(p => escape(p.name)).join(', ')}${n > 3 ? ' +' + (n - 3) : ''}` : '');
+      const p = e.parsed || {};
+      const sat = p.predicted_satisfaction_score;
+      statsLine = sat !== undefined ? `Satisfaction: <b>${sat}/10</b>` : '';
+    }
+
+    const modelTag = e.model ? `<span class="hist-tag">${escape(e.model.replace('claude-', ''))}</span>` : '';
+    const searchTag = e.useSearch ? `<span class="hist-tag">🌐 web</span>` : '';
+    const thinkTag = e.useThinking ? `<span class="hist-tag">🧠 think</span>` : '';
+
+    return `<div class="history-item">
+      <div class="hist-head">
+        <div class="hist-meta">
+          <span class="hist-date">${escape(dateStr)} <small>· ${ago}</small></span>
+          ${modelTag}${searchTag}${thinkTag}
+        </div>
+        <div class="hist-actions">
+          <button class="ghost-btn small" data-load="${e.ts}">↻ Load</button>
+          <button class="danger-btn small" data-del="${e.ts}">🗑</button>
+        </div>
+      </div>
+      <div class="hist-subject">${subject}</div>
+      <div class="hist-question">"${question}${fullQ}"</div>
+      ${statsLine ? `<div class="hist-stats">${statsLine}</div>` : ''}
+    </div>`;
+  }
+
+  function loadHistoryEntry(ts) {
+    const entry = BR_STORE.getHistory(historyKind).find(e => e.ts === ts);
+    if (!entry) { toast('ไม่พบรายการ', 'error'); return; }
+
+    if (historyKind === 'single') {
+      lastSingleResult = entry;
+      document.getElementById('single-output').innerHTML = renderSingle(entry);
+      document.getElementById('single-output-actions').hidden = false;
+      // Switch to single mode tab if not already
+      document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === 'single'));
+      document.querySelectorAll('.research-mode').forEach(m => m.classList.toggle('active', m.id === 'research-single'));
+    } else {
+      lastSurveyResult = entry;
+      document.getElementById('survey-output').innerHTML = renderSurvey(entry);
+      document.getElementById('survey-output-actions').hidden = false;
+      document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === 'survey'));
+      document.querySelectorAll('.research-mode').forEach(m => m.classList.toggle('active', m.id === 'research-survey'));
+    }
+    closeHistory();
+    toast('โหลดจาก history แล้ว', 'success');
+    // Scroll output into view
+    setTimeout(() => {
+      const out = historyKind === 'single' ? 'single-output' : 'survey-output';
+      document.getElementById(out).scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+  }
+
+  function humanAgo(ts) {
+    const mins = Math.floor((Date.now() - ts) / 60000);
+    if (mins < 1) return 'just now';
+    if (mins < 60) return `${mins} min ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs} hr ago`;
+    const days = Math.floor(hrs / 24);
+    return `${days} day${days > 1 ? 's' : ''} ago`;
+  }
+
+  function initHistory() {
+    document.getElementById('btn-history-single').addEventListener('click', () => openHistory('single'));
+    document.getElementById('btn-history-survey').addEventListener('click', () => openHistory('survey'));
+    document.querySelectorAll('[data-close-history]').forEach(b => b.addEventListener('click', closeHistory));
+    document.querySelector('#modal-history .modal-backdrop').addEventListener('click', closeHistory);
+    document.getElementById('btn-clear-history').addEventListener('click', () => {
+      if (!confirm(`ลบ history ${historyKind === 'single' ? 'Single Q&A' : 'Survey'} ทั้งหมด?`)) return;
+      BR_STORE.clearHistory(historyKind);
+      renderHistoryList();
+      refreshHistoryCounts();
+      toast('ลบ history ทั้งหมดแล้ว', '');
+    });
+
+    // Patch the existing Save buttons to refresh counts
+    const btnSaveS = document.getElementById('btn-save-single');
+    if (btnSaveS) {
+      const original = btnSaveS.onclick;
+      btnSaveS.addEventListener('click', () => setTimeout(refreshHistoryCounts, 50));
+    }
+    const btnSaveV = document.getElementById('btn-save-survey');
+    if (btnSaveV) {
+      btnSaveV.addEventListener('click', () => setTimeout(refreshHistoryCounts, 50));
+    }
+    refreshHistoryCounts();
+  }
+
   function init() {
     initModeSwitcher();
     initSingle();
     initSurvey();
+    initHistory();
     refreshPersonaSelect();
   }
 

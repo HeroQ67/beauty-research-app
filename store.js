@@ -59,6 +59,19 @@ window.BR_STORE = {
     if (list.length > 30) list.length = 30;
     return this.set(key, list);
   },
+  getHistory(kind) {
+    const key = kind === 'single' ? this.KEYS.historySingle : this.KEYS.historySurvey;
+    return this.get(key, []);
+  },
+  deleteHistoryEntry(kind, ts) {
+    const key = kind === 'single' ? this.KEYS.historySingle : this.KEYS.historySurvey;
+    const list = this.get(key, []).filter(e => e.ts !== ts);
+    return this.set(key, list);
+  },
+  clearHistory(kind) {
+    const key = kind === 'single' ? this.KEYS.historySingle : this.KEYS.historySurvey;
+    return this.set(key, []);
+  },
 };
 
 // Quick uid helper used across modules
