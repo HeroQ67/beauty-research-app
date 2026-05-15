@@ -106,6 +106,46 @@ window.BR_RESEARCH = (function () {
     }
   }
 
+  // ============ Expert Analysis renderer (shared by Single + Survey) ============
+  function renderExpertAnalysis(ea) {
+    if (!ea) return '';
+    const risks = (ea.caveats_risks || []).map(r => `<li>${escape(r)}</li>`).join('');
+    return `
+      <section class="expert-section">
+        <header class="expert-head">
+          <div class="expert-badge">EXPERT ANALYSIS</div>
+          <h3 class="expert-title">บทวิเคราะห์โดยผู้เชี่ยวชาญ</h3>
+          <div class="expert-byline">Senior beauty marketing strategist · 20+ years · Thai &amp; APAC market intelligence + consumer psychology</div>
+        </header>
+
+        ${ea.market_context ? `<div class="expert-block">
+          <h4>📊 Market Context · ภาพรวมตลาด · มูลค่า · ส่วนแบ่ง</h4>
+          <p>${escape(ea.market_context)}</p>
+        </div>` : ''}
+
+        ${ea.strategic_feasibility ? `<div class="expert-block">
+          <h4>⚖️ Strategic Feasibility · ความเป็นไปได้ของกลยุทธ์</h4>
+          <p>${escape(ea.strategic_feasibility)}</p>
+        </div>` : ''}
+
+        ${ea.consumer_psychology_lens ? `<div class="expert-block">
+          <h4>🧠 Consumer Psychology Lens · มุมจิตวิทยาผู้บริโภค</h4>
+          <p>${escape(ea.consumer_psychology_lens)}</p>
+        </div>` : ''}
+
+        ${ea.expert_verdict ? `<div class="expert-verdict">
+          <h4>🎯 Expert Verdict · คำวินิจฉัย</h4>
+          <p>${escape(ea.expert_verdict)}</p>
+        </div>` : ''}
+
+        ${risks ? `<div class="expert-block expert-risks">
+          <h4>⚠️ Caveats &amp; Risks · ข้อควรระวัง</h4>
+          <ul class="suggestion-list">${risks}</ul>
+        </div>` : ''}
+      </section>
+    `;
+  }
+
   function renderSingle(result) {
     const { persona, question, parsed, citations } = result;
     const p = parsed;
@@ -161,6 +201,8 @@ window.BR_RESEARCH = (function () {
         <h4>💡 Suggestions for the brand</h4>
         <ul class="suggestion-list">${sugg}</ul>
       </div>` : ''}
+
+      ${renderExpertAnalysis(p.expert_analysis)}
 
       ${cites}
     `;
@@ -336,6 +378,8 @@ window.BR_RESEARCH = (function () {
       ${recs ? `<div class="suggestion-block" style="margin-top:16px;">
         <h4>💡 Recommendations</h4><ul class="suggestion-list">${recs}</ul>
       </div>` : ''}
+
+      ${renderExpertAnalysis(p.expert_analysis)}
 
       ${cites}
     `;
