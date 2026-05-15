@@ -521,7 +521,7 @@ input[type="range"]::-webkit-slider-thumb {
 .mode-btn.active { border-left-color: var(--primary); background: var(--surface-alt); }
 .mode-ico { font-size: 2rem; font-family: var(--font-display); color: var(--primary); font-weight: 400; }
 .mode-btn h3 { margin: 0; font-size: 1.1rem; font-family: var(--font-display); letter-spacing: 0.06em; font-weight: 400; text-transform: uppercase; }
-.mode-btn small { color: var(--text-muted); font-style: italic; font-family: var(--font-serif); font-size: .82rem; }
+.mode-btn small { color: var(--text-muted); font-family: var(--font); font-size: .82rem; }
 
 .research-mode { display: none; }
 .research-mode.active { display: block; }
@@ -594,19 +594,25 @@ input[type="range"]::-webkit-slider-thumb {
 .opinion-block, .suggestion-block, .quotes-block {
   background: var(--surface); padding: 18px 22px; margin-top: 10px;
   border-radius: var(--radius); border: 1px solid var(--border);
+  font-family: var(--font);                /* clean sans-serif for body */
 }
 .opinion-block h4, .suggestion-block h4, .quotes-block h4 {
-  margin-top: 0; color: var(--primary);
-  font-family: var(--font-display); font-size: .95rem;
-  font-weight: 400; letter-spacing: 0.08em;
+  margin-top: 0; color: var(--text);
+  font-family: var(--font); font-size: .8rem;
+  font-weight: 700; letter-spacing: 0.1em;
+  text-transform: uppercase;
 }
-.opinion-block p, .suggestion-block p { font-family: var(--font-serif); font-size: 1rem; line-height: 1.55; }
+.opinion-block p, .suggestion-block p, .quotes-block p {
+  font-family: var(--font); font-size: .92rem; line-height: 1.6;
+}
 .opinion-block .quote {
-  font-family: var(--font-serif); font-style: italic;
-  font-size: 1.15rem; color: var(--text);
-  padding-left: 18px; border-left: 4px solid var(--primary);
-  margin: 12px 0; line-height: 1.5;
+  font-family: var(--font); font-style: normal;
+  font-size: 1rem; color: var(--text);
+  padding-left: 16px; border-left: 4px solid var(--primary);
+  margin: 12px 0; line-height: 1.6;
 }
+.suggestion-list { padding-left: 22px; margin: 8px 0; font-family: var(--font); }
+.suggestion-list li { margin-bottom: 8px; font-size: .92rem; line-height: 1.5; }
 .suggestion-list { padding-left: 20px; margin: 8px 0; }
 .suggestion-list li { margin-bottom: 6px; }
 
